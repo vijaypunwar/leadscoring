@@ -1,0 +1,21 @@
+{
+    "MemberId": "3337708805",
+    "LeadNo": 3678,
+    "LeadStatus": "A",
+    "InterestLevel": "Medium",
+    "PostingDate": "2026-04-11",
+    "PostingTime": "04:02:52pm",
+    "closed_date": null,
+    "MeetingDetail": "aek cror budget maI 5 MRLA INSTLAMENT P GHAR CHAHYE",
+    "NextMeetingDetails": "",
+    "NextMeetingType": "Pending",
+    "Id": 3678,
+    "budget_from": "25000",
+    "budget_to": "50000",
+    "sourceCode": "FB",
+    "lead_stages": null,
+    "f_call_status": "Followup Call",
+    "NextTaskType": null,
+    "AudioDuration": null,
+    "FollowupCreatedAt": null
+}
