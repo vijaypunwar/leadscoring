@@ -1,0 +1,95 @@
+{
+  "n_samples": 9012,
+  "n_features": 18,
+  "feature_cols": [
+    "lead_interest_enc",
+    "lead_status_enc",
+    "lead_stage_enc",
+    "next_meeting_type_enc",
+    "lead_budget_from",
+    "lead_budget_to",
+    "lead_has_budget",
+    "lead_is_closed",
+    "days_since_posting",
+    "days_since_followup_created",
+    "fup_count",
+    "fup_positive_hits",
+    "fup_negative_hits",
+    "fup_has_audio_long",
+    "fup_total_audio_seconds",
+    "fup_max_budget",
+    "fup_avg_days_gap",
+    "fup_days_since_last"
+  ],
+  "params": {
+    "objective": "reg:squarederror",
+    "eval_metric": "mae",
+    "n_estimators": 600,
+    "max_depth": 6,
+    "learning_rate": 0.05,
+    "subsample": 0.8,
+    "colsample_bytree": 0.75,
+    "colsample_bylevel": 0.8,
+    "min_child_weight": 45,
+    "reg_alpha": 0.2,
+    "reg_lambda": 1.5,
+    "gamma": 0.1,
+    "random_state": 42,
+    "n_jobs": -1,
+    "tree_method": "hist"
+  },
+  "score_stats": {
+    "min": 1.0,
+    "max": 45.8,
+    "mean": 18.6,
+    "median": 18.0,
+    "std": 5.26
+  },
+  "bucket_breakdown": {
+    "Very Hot": 0,
+    "Hot": 0,
+    "Warm": 18,
+    "Cool": 3181,
+    "Cold": 5813
+  },
+  "cv_folds": 5,
+  "cv_mae_mean": 1.006,
+  "cv_mae_std": 0.022,
+  "cv_rmse_mean": 1.361,
+  "cv_rmse_std": 0.044,
+  "cv_r2_mean": 0.933,
+  "cv_r2_std": 0.006,
+  "full_mae": 0.85,
+  "full_rmse": 1.134,
+  "full_r2": 0.953,
+  "bucket_accuracy": {
+    "overall": 0.92,
+    "Warm": 0.333,
+    "Cool": 0.829,
+    "Cold": 0.971
+  },
+  "feature_importance_by_group": {
+    "lead_attrs": 0.6636,
+    "followup": 0.3364
+  },
+  "feature_stats": {
+    "lead_has_budget": {
+      "n_present": 115,
+      "pct_present": 1.3,
+      "avg_score_with": 25.3,
+      "avg_score_without": 18.5
+    },
+    "lead_is_closed": {
+      "n_present": 2322,
+      "pct_present": 25.8,
+      "avg_score_with": 16.3,
+      "avg_score_without": 19.4
+    },
+    "fup_has_audio_long": {
+      "n_present": 559,
+      "pct_present": 6.2,
+      "avg_score_with": 25.6,
+      "avg_score_without": 18.1
+    }
+  }
+}

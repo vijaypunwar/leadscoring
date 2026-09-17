@@ -11,16 +11,14 @@ from pathlib import Path
 from requests.auth import HTTPBasicAuth
 
 # ── Config ────────────────────────────────────────────────────────────────────
-USERNAME  = ""
-PASSWORD  = ""
+USERNAME  = "su"
+PASSWORD  = "su@987123"
 PAGE_SIZE = 50
-MAX_LEADS = 5000
+MAX_LEADS = 10000
 
-# LEADS_URL     = "https://winwin.shetecrm.com/api/v1/MobileApp/GetMyLeads"
-LEADS_URL     = "https://shetec.com.pk/ace_properties/api/v1/MobileApp/GetAllLeads"
+LEADS_URL     = "https://aasheyana.shetecrm.com/api/get-leads-for-score"
 
-# FOLLOWUPS_URL = "https://winwin.shetecrm.com/api/v1/MobileApp/GetFollowUpbyLeadId"
-FOLLOWUPS_URL = "https://shetec.com.pk/ace_properties/api/v1/MobileApp/GetAllLeadsFollowups?LeadId"
+FOLLOWUPS_URL = "https://aasheyana.shetecrm.com/api/get-leads-followup-for-score?LeadId"
 
 
 DATA_DIR = Path(__file__).parent / "data"
