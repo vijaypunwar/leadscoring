@@ -1,20 +1,10 @@
 """
 STEP 5 — REST API (Flask) with Swagger UI
 ==========================================
-  GET  /                    → API info & available routes
-  GET  /health              → liveness probe
-  POST /score               → score a lead (first time)
-  PUT  /score/<lead_id>     → re-score / update existing lead
-  GET  /score/<lead_id>     → fetch cached score
-  GET  /scores              → list all cached scores
-  GET  /swagger.json        → OpenAPI specification
-  GET  /docs                → Swagger UI
-
-Run:
-  python step5_api.py
-  http://localhost:8000/docs
+Production-ready for Railway / Render / Heroku / any PaaS.
 """
 
+import os
 import sys
 import logging
 from pathlib import Path
@@ -44,13 +34,19 @@ from step2_feature_engineering import (
     NEGATIVE_KEYWORDS,
 )
 
+# ---------------------------------------------------------------------------
+# Logging
+# ---------------------------------------------------------------------------
 logging.basicConfig(
-    level=logging.INFO,
+    level=os.environ.get("LOG_LEVEL", "INFO"),
     format="%(asctime)s  %(levelname)-8s  %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 log = logging.getLogger(__name__)
 
+# ---------------------------------------------------------------------------
+# App
+# ---------------------------------------------------------------------------
 app = Flask(__name__)
 score_store: dict = {}
 
@@ -58,6 +54,15 @@ PROJECT_ROOT = Path(__file__).parent
 MODELS_DIR   = PROJECT_ROOT / "models"
 MODEL_FILE   = MODELS_DIR / "xgb_lead_scorer.model"
 SCALER_FILE  = MODELS_DIR / "scaler.pkl"
+
+# Public base URL (Railway auto-assigns a domain; you can also set BASE_URL env)
+BASE_URL = os.environ.get("BASE_URL") or os.environ.get(
+    "https://creative-gentleness-production-febb.up.railway.app/", ""
+)
+if BASE_URL and not BASE_URL.startswith("http"):
+    BASE_URL = f"https://{BASE_URL}"
+if not BASE_URL:
+    BASE_URL = f"http://localhost:{os.environ.get('PORT', '8000')}"
 
 
 def _check_artifacts():
@@ -122,7 +127,6 @@ def _to_python(obj):
     return obj
 
 
-# Original bands (unchanged)
 def _score_category(score: float) -> str:
     if score <= 20:
         return "Cold"
@@ -148,7 +152,6 @@ def _recommendation_from_score(score: float) -> str:
 
 
 def _parameter_scores(lead: dict, followups: list) -> list:
-    """Informational per-field rule scores. Does not replace lead.score."""
     applied = {}
     ls_score, _ = score_lead_status(lead)
     interest, applied = score_interest_level(lead, followups, applied)
@@ -234,7 +237,7 @@ SWAGGER_SPEC = {
         ),
         "version": "1.1.0",
     },
-    "servers": [{"url": "http://localhost:8000", "description": "Local development server"}],
+    "servers": [{"url": BASE_URL, "description": "Deployed server"}],
     "tags": [
         {"name": "Info", "description": "Service metadata & health"},
         {"name": "Score", "description": "Score and retrieve lead scores"},
@@ -306,21 +309,20 @@ SWAGGER_SPEC = {
                 "properties": {
                     "parameter": {"type": "string"},
                     "value": {},
-                    "score": {"type": "number", "description": "Informational rule contribution only"},
+                    "score": {"type": "number"},
                 },
             },
             "ScoreResponse": {
                 "type": "object",
                 "properties": {
                     "lead_id": {"type": "integer", "example": 3678},
-                    "score": {"type": "number", "example": 72.4, "description": "Main XGBoost lead score"},
+                    "score": {"type": "number", "example": 72.4},
                     "score_category": {"type": "string", "enum": ["Cold", "Warm", "Interested", "Hot", "Very Hot"]},
                     "total_followups": {"type": "integer", "example": 3},
                     "recommendations": {"type": "string"},
                     "datetime": {"type": "string", "format": "date-time"},
                     "parameter_scores": {
                         "type": "array",
-                        "description": "Informational per-parameter scores; not the lead total",
                         "items": {"$ref": "#/components/schemas/ParameterScore"},
                     },
                 },
@@ -364,7 +366,7 @@ def index():
         "status": "running",
         "timestamp": _utc_now(),
         "leads_scored": len(score_store),
-        "docs_url": "http://localhost:8000/docs",
+        "docs_url": f"{BASE_URL}/docs",
         "score_categories": ["Cold", "Warm", "Interested", "Hot", "Very Hot"],
         "endpoints": [
             {"method": "GET",  "path": "/",             "description": "API info and available routes"},
@@ -372,17 +374,10 @@ def index():
             {"method": "POST", "path": "/score",        "description": "Score a lead for the first time"},
             {"method": "PUT",  "path": "/score/<id>",   "description": "Re-score an existing lead"},
             {"method": "GET",  "path": "/score/<id>",   "description": "Fetch cached score"},
-            {"method": "GET",  "path": "/scores",       "description": "List all cached scores (optional ?category=)"},
+            {"method": "GET",  "path": "/scores",       "description": "List all cached scores"},
             {"method": "GET",  "path": "/docs",         "description": "Swagger UI"},
             {"method": "GET",  "path": "/swagger.json", "description": "OpenAPI specification"},
         ],
-        "example_curl": {
-            "score_new_lead":    'curl -X POST http://localhost:8000/score -H "Content-Type: application/json" -d @sample_input.json',
-            "update_lead_score": 'curl -X PUT  http://localhost:8000/score/57249 -H "Content-Type: application/json" -d @sample_input.json',
-            "get_cached_score":  "curl http://localhost:8000/score/57249",
-            "list_all_scores":   "curl http://localhost:8000/scores",
-            "list_hot_leads":    "curl 'http://localhost:8000/scores?category=Hot'",
-        },
     }), 200
 
 
@@ -398,7 +393,12 @@ def health():
 
 @app.route("/swagger.json", methods=["GET"])
 def swagger_spec():
-    return jsonify(SWAGGER_SPEC), 200
+    # Dynamically set the server URL from the request host (works behind proxies)
+    spec = dict(SWAGGER_SPEC)
+    scheme = request.headers.get("X-Forwarded-Proto", request.scheme)
+    host = request.headers.get("X-Forwarded-Host", request.host)
+    spec["servers"] = [{"url": f"{scheme}://{host}", "description": "Current server"}]
+    return jsonify(spec), 200
 
 
 @app.route("/docs", methods=["GET"])
@@ -504,18 +504,20 @@ def not_found(e):
     return jsonify({
         "error": "Route not found",
         "hint": "Visit GET /docs for Swagger UI or GET / for routes",
-        "docs_url": "http://localhost:8000/docs",
     }), 404
 
 
 @app.errorhandler(405)
 def method_not_allowed(e):
-    return jsonify({"error": "Method not allowed on this route", "hint": "Visit GET /docs for Swagger UI"}), 405
+    return jsonify({"error": "Method not allowed on this route"}), 405
 
 
 if __name__ == "__main__":
+    # Local development only. In production, gunicorn runs the app.
+    port = int(os.environ.get("PORT", 8000))
     log.info("=" * 60)
-    log.info("  Lead Scoring API")
-    log.info("  API docs     : http://localhost:8000/docs")
+    log.info("  Lead Scoring API — dev mode")
+    log.info(f"  Listening on : http://0.0.0.0:{port}")
+    log.info(f"  Docs         : http://localhost:{port}/docs")
     log.info("=" * 60)
-    app.run(host="0.0.0.0", port=8000, debug=False)
+    app.run(host="0.0.0.0", port=port, debug=False)
